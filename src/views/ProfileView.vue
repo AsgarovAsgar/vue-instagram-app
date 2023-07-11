@@ -1,12 +1,12 @@
 <script setup>
-import Timeline from '../components/Timeline.vue'
+import Profile from '../components/Profile.vue'
 
 </script>
 
 <template>
   <main class="flex justify-center">
     <div class="p-4 container flex justify-between">
-      <Timeline />
+      <Profile />
     </div>
   </main>
 </template>
