@@ -1,7 +1,17 @@
 <script setup>
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { storeToRefs } from 'pinia';
 import AuthModal from './components/AuthModal.vue'
+
+import { useUserStore } from './stores/users'
+const userStore = useUserStore()
+const { user, loadingUser } = storeToRefs(userStore)
+
+
+onMounted(() => {
+  userStore.getUser()
+})
 
 const router = useRouter()
 const searchUsername = ref('')
@@ -12,7 +22,9 @@ const onSearch = () => {
   searchUsername.value = ''
 }
 
-const isAuthenticated = ref(false)
+const handleLogout = () => {
+  userStore.handleLogout()
+}
 
 </script>
 
@@ -31,13 +43,15 @@ const isAuthenticated = ref(false)
           </button>
         </div>
       </div>
-      <div v-if="!isAuthenticated" class="text-white flex gap-2">
-        <AuthModal :isLogin="false" />
-        <AuthModal :isLogin="true" />
-      </div>
-      <div v-else class="text-white flex gap-2">
-        <button class="px-4 py-1.5 bg-blue-500">Profile</button>
-        <button class="px-4 py-1.5 bg-blue-500">Log out</button>
+      <div v-if="!loadingUser">
+        <div v-if="!user" class="text-white flex gap-2">
+          <AuthModal :isLogin="false" />
+          <AuthModal :isLogin="true" />
+        </div>
+        <div v-else class="text-white flex gap-2">
+          <button class="px-4 py-1.5 bg-blue-500">Profile</button>
+          <button @click="handleLogout" class="px-4 py-1.5 bg-blue-500">Log out</button>
+        </div>
       </div>
     </div>
   </header>
