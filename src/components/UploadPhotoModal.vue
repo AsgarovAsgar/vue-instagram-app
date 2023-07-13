@@ -2,40 +2,41 @@
 import { ref, defineProps } from 'vue'
 import { storeToRefs } from 'pinia';
 import { useUserStore } from '../stores/users'
-
-const props = defineProps({
-  isLogin: Boolean
-})
-
+import {supabase} from '../supabase'
 
 const userStore = useUserStore()
 const { user, errorMessage, loading } = storeToRefs(userStore)
 
 const visible = ref(false)
+const caption = ref('')
+const file = ref(null)
 
-const userCredentials = ref({
-  username: '',
-  email: '',
-  password: ''
-})
-
-const clearUserCredentailsInput = () => {
-  userCredentials.value.username = ''
-  userCredentials.value.email = ''
-  userCredentials.value.password = ''
-  userStore.clearErrorMessage()
-}
 
 const handleOk = async () => {
-  if(props.isLogin) {
-    await userStore.handleLogin(userCredentials.value)
-  } else {
-    await userStore.handleSignup(userCredentials.value)
+  if(!file.value) return
+  loading.value = true
+  const fileName = `${Date.now()}-${file.value.name}`
+  console.log('fileName', fileName);
+  const { data, error } = await supabase.storage.from('images').upload('public/' + fileName, file.value)
+
+  if(error) {
+    loading.value = false
+    return errorMessage.value = 'Unable to upload'
   }
-  if(user.value) {
-    clearUserCredentailsInput()
-    visible.value = false
-  }
+
+  const res = await supabase.from('posts').insert({
+    image_url: data.path,
+    caption: caption.value,
+    owner_id: user.value.id
+  })
+
+  console.log('res', res);
+
+  loading.value = false
+}
+
+const handleUpload = (e) => {
+  if(e.target.files.length) file.value = e.target.files[0]
 }
 
 const openModal = () => {
@@ -44,20 +45,18 @@ const openModal = () => {
 }
 
 const closeModal = () => {
-  clearUserCredentailsInput()
   visible.value = false
 }
 </script>
 
 <template>
-  <button class="px-4 py-1.5 bg-blue-500" @click="openModal">{{ props.isLogin ? 'Login' : 'Sign up' }}</button>
+  <button class="px-4 py-1.5 bg-gray-100" @click="openModal">Upload Photo</button>
   <div v-if="visible" @click.self="closeModal" class="fixed top-0 left-0 w-full h-full z-10 bg-gray-900/70 text-black flex justify-center items-baseline pt-20">
     <div id="modal" class="w-full max-w-xl bg-white p-6 rounded-lg shadow-lg">
-      <h2 class="text-2xl font-bold pb-2 border-b">{{ props.isLogin ? 'Login' : 'Sign up' }}</h2>
+      <h2 class="text-2xl font-bold pb-2 border-b">Upload photo</h2>
       <div v-if="!loading" class="my-2 flex flex-col gap-2">
-        <input v-if="!isLogin" v-model="userCredentials.username" class="border rounded px-3 py-1.5 text-sm" type="text" placeholder="User name">
-        <input v-model="userCredentials.email" class="border rounded px-3 py-1.5 text-sm" type="email" placeholder="Email">
-        <input v-model="userCredentials.password" class="border rounded px-3 py-1.5 text-sm" type="password" placeholder="Password">
+        <input type="file" accept="image/*" @change="handleUpload" class="border rounded px-3 py-1.5 text-sm">
+        <input v-model="caption" type="text" placeholder="Caption..." maxlength="50" class="border rounded px-3 py-1.5 text-sm">
         <p class="text-red-400 text-sm font-medium">{{ errorMessage }}</p>
       </div>
       <div v-else class="flex items-center w-full justify-center p-8">
