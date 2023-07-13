@@ -22,6 +22,10 @@ const onSearch = () => {
   searchUsername.value = ''
 }
 
+const goToUserProfile = () => {
+  router.push(`/profile/${user.value.username}`)
+}
+
 const handleLogout = () => {
   userStore.handleLogout()
 }
@@ -49,7 +53,7 @@ const handleLogout = () => {
           <AuthModal :isLogin="true" />
         </div>
         <div v-else class="text-white flex gap-2">
-          <button class="px-4 py-1.5 bg-blue-500">Profile</button>
+          <button class="px-4 py-1.5 bg-blue-500" @click="goToUserProfile">Profile</button>
           <button @click="handleLogout" class="px-4 py-1.5 bg-blue-500">Log out</button>
         </div>
       </div>
