@@ -4,6 +4,8 @@ import { storeToRefs } from 'pinia';
 import { useUserStore } from '../stores/users'
 import {supabase} from '../supabase'
 
+const props = defineProps(['addNewPost'])
+
 const userStore = useUserStore()
 const { user, errorMessage, loading } = storeToRefs(userStore)
 
@@ -33,6 +35,13 @@ const handleOk = async () => {
   console.log('res', res);
 
   loading.value = false
+  visible.value = false
+  props.addNewPost({
+    image_url: data.path,
+    caption: caption.value,
+  })
+  caption.value = ''
+
 }
 
 const handleUpload = (e) => {
