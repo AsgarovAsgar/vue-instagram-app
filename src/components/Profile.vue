@@ -1,6 +1,6 @@
 <script setup>
 import UploadPhotoModal from './UploadPhotoModal.vue';
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router';
 import { useUserStore } from '../stores/users';
 import { storeToRefs } from 'pinia';
@@ -15,6 +15,7 @@ const { username: profileUsername } = route.params
 const userData = ref(null)
 const posts = ref([])
 const loading = ref(false)
+const isFollowing = ref(false)
 
 const fetchData = async () => {
   loading.value = true
@@ -27,13 +28,47 @@ const fetchData = async () => {
   if(postError) return alert('Something went wrong')
   posts.value = postsData.reverse()
 
+  await fetchIsFollowing()
+
   loading.value = false
 }
 
+const fetchIsFollowing = async () => {
+  if(user.value.id === userData.value.id) return
+  const { data } = await supabase
+    .from('followers_following')
+    .select()
+    .eq('follower_id', user.value.id)
+    .eq('following_id', userData.value.id)
+    .single()
 
-onMounted(() => fetchData())
+  if(data) isFollowing.value = true
+}
+
+// watch(user, async () => {
+//   await fetchIsFollowing()
+// })
+
+
+onMounted(() => {
+    fetchData()
+})
 
 const addNewPost = (post) => posts.value.unshift(post)
+
+const followUser = async () => {
+  await supabase.from('followers_following').insert({
+    follower_id: user.value.id,
+    following_id: userData.value.id
+  })
+} 
+
+const unfollowUser = async () => {
+  await supabase.from('followers_following').delete({
+    follower_id: user.value.id,
+    following_id: userData.value.id
+  })
+}
 
 </script>
 
@@ -44,7 +79,7 @@ const addNewPost = (post) => posts.value.unshift(post)
       <div class="flex justify-between items-center">
         <div class="space-y-4">
           <div>
-            <h1 class="text-3xl font-bold">asgarasgarov</h1>
+            <h1 class="text-3xl font-bold">{{ profileUsername }}</h1>
           </div>
           <div class="flex gap-6">
             <p class="font-bold">{{ posts.length }} posts</p>
@@ -52,7 +87,14 @@ const addNewPost = (post) => posts.value.unshift(post)
             <p class="font-bold">4000 following</p>
           </div>
         </div>
-        <UploadPhotoModal v-if="user?.username === profileUsername" :addNewPost='addNewPost' />
+        <div v-if="user">
+          <UploadPhotoModal v-if="user?.username === profileUsername" :addNewPost='addNewPost' />
+          <div v-else>
+            <button v-if="isFollowing" @click="unfollowUser" class="rounded bg-blue-500 px-4 py-1.5 font-medium text-white">Following</button>
+            <button v-else @click="followUser" class="rounded bg-blue-500 px-4 py-1.5 font-medium text-white">Follow</button>    
+          </div>
+        </div>
+
       </div>
       <!-- IMAGE GALLERY -->
       <div class="grid grid-cols-4 gap-4">
