@@ -4,12 +4,12 @@ import { onMounted, ref } from 'vue';
 const observer = ref(null)
 const root = ref(null)
 
-const emits = defineEmits('intersect')
+const emits = defineEmits(['intersect'])
 
 onMounted(() => {
   observer.value = new IntersectionObserver((entry) => {
     if(entry && entry[0].isIntersecting) {
-      console.log('aaaae', entry);
+      // console.log('aaaae', entry);
       emits('intersect')
     }
   })
@@ -20,5 +20,5 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full h-2 bg-red-500" ref="root"></div>
+  <div class="w-full h-1 relative -top-20" ref="root"></div>
 </template>

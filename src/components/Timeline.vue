@@ -13,6 +13,9 @@ const userStore = useUserStore()
 
 const {user, loadingUser} = storeToRefs(userStore)
 const posts = ref([])
+const lastPostIndex = ref(0)
+const ownerIds = ref([])
+const reachEnd = ref(false)
 
 const fetchData = async () => {
   if(!user.value) return
@@ -21,12 +24,28 @@ const fetchData = async () => {
     .select('following_id')
     .eq('follower_id', user.value.id)
 
-  const ownerIds = followingUsersIds.map(u => u.following_id)
-  const {data: postData} = await supabase.from('posts').select().in('owner_id', ownerIds).order('created_at', {ascending: false})
+  ownerIds.value = followingUsersIds.map(u => u.following_id)
+  const {data: postData} = await supabase
+    .from('posts')
+    .select()
+    .in('owner_id', ownerIds.value)
+    .range(0, lastPostIndex.value)
+    .order('created_at', {ascending: false})
   posts.value = postData
 }
 
-const fetchNextSet = () => {}
+const fetchNextSet = async () => {
+  if(reachEnd.value) return
+  const {data: postData} = await supabase
+    .from('posts')
+    .select()
+    .in('owner_id', ownerIds.value)
+    .range(lastPostIndex.value + 1, lastPostIndex.value + 1)
+    .order('created_at', {ascending: false})
+  posts.value = [...posts.value, ...postData]
+  lastPostIndex.value ++
+  if(!postData.length) reachEnd.value = true
+}
 
 watch(user, async () => {
   await fetchData()
@@ -40,11 +59,11 @@ onMounted(() => {
 
 <template>
   <div v-if="!loadingUser" class="mx-auto w-full">
-    <div v-if="user" class="border w-full flex flex-col items-center gap-4 p-4">
+    <div v-if="user" class="w-full flex flex-col items-center gap-4 p-4">
       <Card v-for="post in posts" :key="post.id" :post="post" />
-      <Observer @intersect="fetchNextSet" />
+      <Observer v-if="posts.length" @intersect="fetchNextSet" />
     </div>
-    <div v-else class="border w-full flex flex-col items-center text-xl p-4">
+    <div v-else class="w-full flex flex-col items-center text-xl p-4">
       <p class="font-semibold">Login to see posts</p>
     </div>
   </div>

@@ -16,6 +16,7 @@ const userData = ref(null)
 const posts = ref([])
 const loading = ref(false)
 const isFollowing = ref(false)
+const baseStorageUrl = import.meta.env.VITE_BASE_STORAGE_URL
 
 const fetchData = async () => {
   loading.value = true
@@ -121,7 +122,7 @@ const unfollowUser = async () => {
       <!-- IMAGE GALLERY -->
       <div class="grid grid-cols-4 gap-4">
         <div v-for="post in posts" class="flex justify-center">
-          <img class="h-64 object-contain shadow-lg" :src="`https://dktxvmykrnwbabckasib.supabase.co/storage/v1/object/public/images/${post.image_url}`" alt="">
+          <img class="h-64 object-contain shadow-lg" :src="`${baseStorageUrl}${post.image_url}`" alt="">
         </div>
       </div>
     </div>
@@ -136,4 +137,3 @@ const unfollowUser = async () => {
     </svg>
   </div>
 </template>
-<!-- https://dktxvmykrnwbabckasib.supabase.co/storage/v1/object/public/images/public/1689276788743-pikachu.jpeg -->
