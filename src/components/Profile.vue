@@ -29,6 +29,9 @@ const fetchData = async () => {
   posts.value = postsData.reverse()
 
   await fetchIsFollowing()
+  userData.value.followerCount = await fetchFollowersCount()
+  userData.value.followingCount = await fetchFollowingCount()
+  
 
   loading.value = false
 }
@@ -45,13 +48,29 @@ const fetchIsFollowing = async () => {
   if(data) isFollowing.value = true
 }
 
-// watch(user, async () => {
-//   await fetchIsFollowing()
-// })
+const fetchFollowersCount = async () => {
+  const { count } = await supabase
+    .from('followers_following')
+    .select('*', {count: 'exact'})
+    .eq('following_id', userData.value.id)
+    return count
+}
+
+const fetchFollowingCount = async () => {
+  const { count } = await supabase
+    .from('followers_following')
+    .select('*', {count: 'exact'})
+    .eq('follower_id', userData.value.id)
+    return count
+}
+
+watch(user, async () => {
+  await fetchData()
+})
 
 
-onMounted(() => {
-    fetchData()
+onMounted(async () => {
+  fetchData()
 })
 
 const addNewPost = (post) => posts.value.unshift(post)
@@ -61,13 +80,16 @@ const followUser = async () => {
     follower_id: user.value.id,
     following_id: userData.value.id
   })
+  isFollowing.value = true
 } 
 
 const unfollowUser = async () => {
-  await supabase.from('followers_following').delete({
-    follower_id: user.value.id,
-    following_id: userData.value.id
-  })
+  await supabase
+    .from('followers_following')
+    .delete()
+    .eq('follower_id', user.value.id)
+    .eq('following_id', userData.value.id)
+    isFollowing.value = false
 }
 
 </script>
@@ -83,8 +105,8 @@ const unfollowUser = async () => {
           </div>
           <div class="flex gap-6">
             <p class="font-bold">{{ posts.length }} posts</p>
-            <p class="font-bold">400 followers</p>
-            <p class="font-bold">4000 following</p>
+            <p class="font-bold">{{ userData.followerCount }} followers</p>
+            <p class="font-bold">{{userData.followingCount}} following</p>
           </div>
         </div>
         <div v-if="user">
